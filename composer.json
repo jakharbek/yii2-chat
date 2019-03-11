@@ -1,0 +1,21 @@
+{
+    "name": "jakharbek/yii2-chat",
+    "description": "Chat",
+    "type": "yii2-extension",
+    "keywords": ["yii2","extension","chat"],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "jakharbek",
+            "email": "jakharbek@gmail.com"
+        }
+    ],
+    "require": {
+        "yiisoft/yii2": "~2.0.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "jakharbek\\chat\\": ""
+        }
+    }
+}
