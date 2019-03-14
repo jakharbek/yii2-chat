@@ -118,6 +118,9 @@ class ChatServices extends Component implements iChatsServices
         $messages = $messages_query->all();
 
         foreach ($messages as $message) {
+            if (!($message->to_user_id == $user_id|| $message->from_user_id == $user_id)) {
+                throw new \DomainException("Access denied");
+            }
             $message->setSeen($user_id);
         }
 

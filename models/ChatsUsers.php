@@ -35,7 +35,7 @@ class ChatsUsers extends \yii\db\ActiveRecord
     {
         return [
             [['chat_id', 'user_id'], 'default', 'value' => null],
-            [['status'], 'value' => static::STATUS_ACTIVE],
+            [['status'], 'default','value' => static::STATUS_ACTIVE],
             [['chat_id', 'user_id', 'status'], 'integer'],
             [['chat_id'], 'exist', 'skipOnError' => true, 'targetClass' => Chats::className(), 'targetAttribute' => ['chat_id' => 'chat_id']],
         ];

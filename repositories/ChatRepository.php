@@ -44,6 +44,7 @@ class ChatRepository extends Component
      */
     public function getLastSentMessage($chat_id)
     {
+        
         return Messages::find()->chat($chat_id)->active()->orderBy(['message_id' => SORT_DESC])->one();
     }
 

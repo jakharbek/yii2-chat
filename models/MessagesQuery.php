@@ -16,12 +16,13 @@ class MessagesQuery extends \yii\db\ActiveQuery
     {
         return $this->status(Messages::STATUS_SENT);
     }
+
     /**
      * @return MessagesQuery
      */
     public function status($status)
     {
-        return $this->andWhere(Messages::tableName().'.[[status]]='.$status);
+        return $this->andWhere(['OR', [ Messages::tableName() . '.[[from_status]]' => $status,Messages::tableName() . '.[[to_status]]' => $status]]);
     }
 
     /**
@@ -48,6 +49,6 @@ class MessagesQuery extends \yii\db\ActiveQuery
      */
     public function chat($chat_id)
     {
-        return $this->andWhere([Messages::tableName().'.to_chat_id' => $chat_id]);
+        return $this->andWhere([Messages::tableName() . '.to_chat_id' => $chat_id]);
     }
 }
