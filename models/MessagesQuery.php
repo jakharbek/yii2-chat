@@ -1,4 +1,5 @@
 <?php
+
 namespace jakharbek\chat\models;
 
 /**
@@ -8,11 +9,20 @@ namespace jakharbek\chat\models;
  */
 class MessagesQuery extends \yii\db\ActiveQuery
 {
-
-    /*public function active()
+    /**
+     * @return MessagesQuery
+     */
+    public function active()
     {
-        return $this->andWhere('[[status]]=1');
-    }*/
+        return $this->status(Messages::STATUS_SENT);
+    }
+    /**
+     * @return MessagesQuery
+     */
+    public function status($status)
+    {
+        return $this->andWhere(Messages::tableName().'.[[status]]='.$status);
+    }
 
     /**
      * {@inheritdoc}
@@ -30,5 +40,14 @@ class MessagesQuery extends \yii\db\ActiveQuery
     public function one($db = null)
     {
         return parent::one($db);
+    }
+
+    /**
+     * @param $chat_id
+     * @return MessagesQuery
+     */
+    public function chat($chat_id)
+    {
+        return $this->andWhere([Messages::tableName().'.to_chat_id' => $chat_id]);
     }
 }

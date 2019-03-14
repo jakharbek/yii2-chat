@@ -16,6 +16,10 @@ use Yii;
  */
 class ChatsUsers extends \yii\db\ActiveRecord
 {
+    const STATUS_ACTIVE = 1;
+    const STATUS_DELETED = 0;
+    const STATUS_BLOCK = 2;
+
     /**
      * {@inheritdoc}
      */
@@ -30,7 +34,8 @@ class ChatsUsers extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['chat_id', 'user_id', 'status'], 'default', 'value' => null],
+            [['chat_id', 'user_id'], 'default', 'value' => null],
+            [['status'], 'value' => static::STATUS_ACTIVE],
             [['chat_id', 'user_id', 'status'], 'integer'],
             [['chat_id'], 'exist', 'skipOnError' => true, 'targetClass' => Chats::className(), 'targetAttribute' => ['chat_id' => 'chat_id']],
         ];
@@ -42,10 +47,10 @@ class ChatsUsers extends \yii\db\ActiveRecord
     public function attributeLabels()
     {
         return [
-            'id' => 'ID',
+            'id'      => 'ID',
             'chat_id' => 'Chat ID',
             'user_id' => 'User ID',
-            'status' => 'Status',
+            'status'  => 'Status',
         ];
     }
 

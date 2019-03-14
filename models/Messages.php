@@ -1,7 +1,11 @@
 <?php
+
 namespace jakharbek\chat\models;
 
 use Yii;
+use yii\behaviors\TimestampBehavior;
+use yii\helpers\Json;
+use yii2tech\ar\softdelete\SoftDeleteBehavior;
 
 /**
  * This is the model class for table "messages".
@@ -15,7 +19,8 @@ use Yii;
  * @property int $to_user_id
  * @property int $is_seen
  * @property string $seen
- * @property int $status
+ * @property int $to_status
+ * @property int $from_status
  * @property int $created_at
  * @property int $updated_at
  * @property int $deleted_at
@@ -27,12 +32,34 @@ use Yii;
  */
 class Messages extends \yii\db\ActiveRecord
 {
+    const TYPE_USUALLY = 1;
+    const STATUS_DELETED = 0;
+    const STATUS_SENT = 1;
+
     /**
      * {@inheritdoc}
      */
     public static function tableName()
     {
         return 'messages';
+    }
+
+    public function behaviors()
+    {
+        return [
+            [
+                'class' => TimestampBehavior::className(),
+            ],
+
+            'softDeleteBehavior' => [
+                'class'                     => SoftDeleteBehavior::className(),
+                'softDeleteAttributeValues' => [
+                    'isDeleted'  => true,
+                    'deleted_at' => time(),
+                ],
+                'replaceRegularDelete'      => true // mutate native `delete()` method
+            ],
+        ];
     }
 
     /**
@@ -42,11 +69,14 @@ class Messages extends \yii\db\ActiveRecord
     {
         return [
             [['message'], 'string'],
-            [['type', 'replay_message_id', 'from_user_id', 'to_chat_id', 'to_user_id', 'is_seen', 'status', 'created_at', 'updated_at', 'deleted_at', 'isDeleted'], 'default', 'value' => null],
-            [['type', 'replay_message_id', 'from_user_id', 'to_chat_id', 'to_user_id', 'is_seen', 'status', 'created_at', 'updated_at', 'deleted_at', 'isDeleted'], 'integer'],
+            [['type', 'replay_message_id', 'from_user_id', 'to_chat_id', 'to_user_id', 'is_seen', 'created_at', 'updated_at', 'deleted_at', 'isDeleted'], 'default', 'value' => null],
+            [['type', 'replay_message_id', 'from_user_id', 'to_chat_id', 'to_user_id', 'is_seen', 'to_status', 'from_status', 'created_at', 'updated_at', 'deleted_at', 'isDeleted'], 'integer'],
             [['seen'], 'string', 'max' => 1024],
             [['to_chat_id'], 'exist', 'skipOnError' => true, 'targetClass' => Chats::className(), 'targetAttribute' => ['to_chat_id' => 'chat_id']],
             [['replay_message_id'], 'exist', 'skipOnError' => true, 'targetClass' => Messages::className(), 'targetAttribute' => ['replay_message_id' => 'message_id']],
+            [['type', 'is_seen', 'created_at', 'updated_at', 'deleted_at', 'isDeleted'], 'default', 'value' => 0],
+            [['to_status', 'from_status'], 'default', 'value' => static::STATUS_SENT]
+
         ];
     }
 
@@ -56,20 +86,20 @@ class Messages extends \yii\db\ActiveRecord
     public function attributeLabels()
     {
         return [
-            'message_id' => 'Message ID',
-            'message' => 'Message',
-            'type' => 'Type',
+            'message_id'        => 'Message ID',
+            'message'           => 'Message',
+            'type'              => 'Type',
             'replay_message_id' => 'Replay Message ID',
-            'from_user_id' => 'From User ID',
-            'to_chat_id' => 'To Chat ID',
-            'to_user_id' => 'To User ID',
-            'is_seen' => 'Is Seen',
-            'seen' => 'Seen',
-            'status' => 'Status',
-            'created_at' => 'Created At',
-            'updated_at' => 'Updated At',
-            'deleted_at' => 'Deleted At',
-            'isDeleted' => 'Is Deleted',
+            'from_user_id'      => 'From User ID',
+            'to_chat_id'        => 'To Chat ID',
+            'to_user_id'        => 'To User ID',
+            'is_seen'           => 'Is Seen',
+            'seen'              => 'Seen',
+            'status'            => 'Status',
+            'created_at'        => 'Created At',
+            'updated_at'        => 'Updated At',
+            'deleted_at'        => 'Deleted At',
+            'isDeleted'         => 'Is Deleted',
         ];
     }
 
@@ -104,5 +134,40 @@ class Messages extends \yii\db\ActiveRecord
     public static function find()
     {
         return new MessagesQuery(get_called_class());
+    }
+
+    /**
+     * @param null $user_id
+     */
+    public function setSeen($user_id = null)
+    {
+        $this->updateAttributes(['is_seen' => true]);
+        if ($user_id !== null):
+            $this->addToSeenUser($user_id);
+        endif;
+    }
+
+    /**
+     * @param $user_id
+     */
+    public function addToSeenUser($user_id)
+    {
+        $seen = @Json::decode($this->seen);
+        if (is_array($seen)):
+            if (array_key_exists($user_id, $seen)) {
+                return;
+            }
+        endif;;
+        $seen[$user_id] = time();
+        $seen = Json::encode($seen);
+        $this->updateAttributes(['seen' => $seen]);
+    }
+
+    public function isOwner($user_id)
+    {
+        if($this->from_user_id == $user_id){
+            return true;
+        }
+        return false;
     }
 }
