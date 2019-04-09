@@ -120,3 +120,31 @@ deleteMessage($message_id, $user_id, $delete_for, $deleteAll = false)
 $service = Yii::createObject(['class' => ChatServices::class]);
 $messages = $service->deleteMessage($message_id, $user_id,$delete_for, $deleteAll);
 ```
+
+Подключение сокета
+-----
+
+Для начало нужно подключить asset
+-----
+```php
+\jakharbek\chat\assets\ChatAsset::register($this);
+```
+
+Пример подключение сокет клиента.
+-----
+```php
+
+$js = <<<JS
+var chat = new ChatClient("ws://localhost:8080",'{$token}','{$diolog_1}','{$diolog_2}','{$diolog_type}',"");
+chat.onMessage = function(type,data,event){
+    //сдесь будет ваша логика для UI
+}
+chat.init();
+$(".msg_send_btn").click(function () {
+    chat.sendMessage($('.write_msg').val());
+});
+JS;
+
+$this->registerJs($js);
+```
+
