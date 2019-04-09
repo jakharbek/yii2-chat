@@ -123,8 +123,20 @@ $messages = $service->deleteMessage($message_id, $user_id,$delete_for, $deleteAl
 
 Подключение сокета
 -----
+Запуск веб-сокета сервера
+-----
+Вам нужно подключить в ваше консольное приложение контроеллер веб-сокета: 
+```php
+...
+controllerMap => [
+'server' => \jakharbek\chat\commands\ServerController::class
+]
+...
+```
 
-Для начало нужно подключить asset
+После запустить это консольную комманду как daimon.
+
+Подключение asset'а
 -----
 ```php
 \jakharbek\chat\assets\ChatAsset::register($this);
