@@ -42,15 +42,12 @@
  __proto__: Object
  _request: "{"type":"message","data":"sadsd"}"
  */
-var ChatClient = function (url, access_token, diolog_1, diolog_2, diolog_type, to_user_id) {
+var ChatClient = function (url, access_token, chat_id) {
     var self = this;
     this.access_token = access_token;
+    this.chat_id = chat_id;
     this.url = url;
 
-    this.diolog_1 = diolog_1;
-    this.diolog_2 = diolog_2;
-    this.diolog_type = diolog_type;
-    this.to_user_id = to_user_id;
 
 
     /**
@@ -60,10 +57,7 @@ var ChatClient = function (url, access_token, diolog_1, diolog_2, diolog_type, t
     this.socket = new WebSocket(
         self.url +
         '?access_token=' + self.access_token +
-        '&diolog_1=' + self.diolog_1 +
-        '&diolog_2=' + self.diolog_2 +
-        '&diolog_type=' + self.diolog_type +
-        '&to_user_id=' + self.to_user_id
+        '&chat_id=' + self.chat_id
     );
 
     /**

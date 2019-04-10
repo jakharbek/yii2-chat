@@ -2,8 +2,10 @@
 
 namespace jakharbek\chat\commands;
 
+use common\models\UserTokens;
 use jakharbek\chat\dto\sendMessageChatDTO;
-use common\modules\tokens\models\Token;
+use jakharbek\chat\exceptions\ChatException;
+use jakharbek\chat\interfaces\iChatsRepository;
 use jakharbek\chat\models\Chats;
 use jakharbek\chat\repositories\ChatRepository;
 use jakharbek\chat\services\ChatServices;
@@ -55,7 +57,7 @@ class Chat implements MessageComponentInterface
     {
         $params = $this->getConnectionParams($conn);
         $access_token = $params['access_token'];
-        $token = Token::find()->andWhere(['token' => $access_token])->one();
+        $token = UserTokens::find()->andWhere(['token' => $access_token])->andWhere(['<', 'expires', time()])->one();
         if (is_object($token)) {
             return true;
         }
@@ -71,7 +73,7 @@ class Chat implements MessageComponentInterface
         $params = $this->getConnectionParams($conn);
         $access_token = $params['access_token'];
 
-        return Token::find()->andWhere(['token' => $access_token])->one()->user_id;
+        return UserTokens::find()->andWhere(['token' => $access_token])->one()->user_id;
     }
 
     /**
@@ -83,17 +85,15 @@ class Chat implements MessageComponentInterface
         $params = $this->getConnectionParams($conn);
 
         /**
-         * @var $repositoryChat ChatRepository
+         * @var $repositoryChat iChatsRepository
          */
-        $repositoryChat = \Yii::$container->get(ChatRepository::class);
-        $diolog_1 = $params['diolog_1'];
-        $diolog_2 = $params['diolog_2'];
-        $diolog_type = $params['diolog_type'];
-        $chat = $repositoryChat->getChat($diolog_1, $diolog_2, $diolog_type);
-        if (!is_object($chat)) {
+        $repositoryChat = \Yii::$container->get(iChatsRepository::class);
+        try {
+            $repositoryChat->getChatById($params['chat_id']);
+            return true;
+        } catch (ChatException $exception) {
             return false;
         }
-        return true;
     }
 
 
@@ -109,16 +109,11 @@ class Chat implements MessageComponentInterface
          * @var $repositoryChat ChatRepository
          */
         $repositoryChat = \Yii::$container->get(ChatRepository::class);
-        $diolog_1 = $params['diolog_1'];
-        $diolog_2 = $params['diolog_2'];
-        $diolog_type = $params['diolog_type'];
-        $chat = $repositoryChat->getChat($diolog_1, $diolog_2, $diolog_type);
-
-        if (!is_object($chat)) {
-            $conn->close();
+        if (!$this->validateChat($conn)) {
+            return false;
         }
 
-        return $chat->chat_id;
+        return $repositoryChat->getChatById($params['chat_id']);
     }
 
     /**
@@ -230,43 +225,34 @@ class Chat implements MessageComponentInterface
         }
 
         $request = Json::decode($_request);
-        $to_user_id = $params['to_user_id'];
         $from_user_id = $this->getUserId($from);
         $message = $request['data'];
-        $diolog_type = $params['diolog_type'];
-        $diolog_1 = $params['diolog_1'];
-        $diolog_2 = $params['diolog_2'];
+        $replay_message_id = $params['replay_message_id'];
 
         if ($request['type'] == self::TYPE_MESSAGE) {
 
 
             /**
-             * @var $serviceChat ChatServices
+             * @var $serviceChat iChatsRepository
              */
-            $serviceChat = \Yii::$container->get(ChatServices::class);
+            $serviceChat = \Yii::$container->get(iChatsRepository::class);
 
             $sendMessageChatDTO = new sendMessageChatDTO();
-            $sendMessageChatDTO->to_user_id = $to_user_id;
             $sendMessageChatDTO->from_user_id = $from_user_id;
             $sendMessageChatDTO->message = $message;
-            $sendMessageChatDTO->diolog_type = $diolog_type;
-            $sendMessageChatDTO->diolog_1 = $diolog_1;
-            $sendMessageChatDTO->diolog_2 = $diolog_2;
+            $sendMessageChatDTO->replay_message_id = $replay_message_id;
             $_message = $serviceChat->sendMessage($sendMessageChatDTO);
 
             foreach ($clients as $client) {
                 $response = [
                     'type' => self::TYPE_MESSAGE,
                     'data' => [
-                        '_request'     => $_request,
-                        'to_user_id'   => $to_user_id,
+                        '_request' => $_request,
+                        'replay_message_id' => $replay_message_id,
                         'from_user_id' => $from_user_id,
-                        'message'      => $message,
-                        'diolog_type'  => $diolog_type,
-                        'diolog_1'     => $diolog_1,
-                        'diolog_2'     => $diolog_2,
-                        '_from'        => $from,
-                        '_message'     => $_message
+                        'message' => $message,
+                        '_from' => $from,
+                        '_message' => $_message
                     ]
                 ];
                 echo "Connection is opened:";

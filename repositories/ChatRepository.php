@@ -2,8 +2,14 @@
 
 namespace jakharbek\chat\repositories;
 
+use jakharbek\chat\dto\getChatDTO;
+use jakharbek\chat\dto\getChatsDTO;
+use jakharbek\chat\dto\getLastMessageDTO;
+use jakharbek\chat\dto\getMessagesDTO;
+use jakharbek\chat\exceptions\ChatException;
+use jakharbek\chat\interfaces\iChatsRepository;
 use jakharbek\chat\models\Chats;
-use jakharbek\chat\models\ChatsUsers;
+use jakharbek\chat\models\ChatsUserUser;
 use jakharbek\chat\models\Messages;
 use yii\base\Component;
 
@@ -11,61 +17,91 @@ use yii\base\Component;
  * Class ChatRepository
  * @package jakharbek\chat\repositories
  */
-class ChatRepository extends Component
+class ChatRepository extends Component implements iChatsRepository
 {
-    /**
-     * @param $diolog_1
-     * @param $diolog_2
-     * @param $diolog_type
-     * @return array|Chats|null
-     */
-    public function getChat($diolog_1, $diolog_2, $diolog_type)
-    {
-        $guid_1 = $diolog_1 . ":" . $diolog_2 . ":" . $diolog_type;
-        $guid_2 = $diolog_2 . ":" . $diolog_1 . ":" . $diolog_type;
 
-        return Chats::find()->where(['or', ['guid' => $guid_1], ['guid' => $guid_2]])->one();
+    /**
+     * @param getChatsDTO $getChatsDTO
+     * @return mixed
+     */
+    public function getChats(getChatsDTO $getChatsDTO)
+    {
+        $query = Chats::find()->andFilterWhere(['label' => $getChatsDTO->label]);
+        $query->andFilterWhere(['type' => $getChatsDTO]);
+
+        if ($getChatsDTO->type == Chats::TYPE_PUBLIC) {
+            $query->joinWith('chatsUserGroup');
+            $query->andWhere(['chats_user_group.user_id' => $getChatsDTO->user_id]);
+        }
+
+        if ($getChatsDTO->type == Chats::TYPE_PRIVATE) {
+            $query->andWhere(['chats.owner_id' => $getChatsDTO->user_id]);
+        }
+
+        if ($getChatsDTO->getQuery) {
+            return $query;
+        }
+
+        return $query->all();
     }
 
     /**
-     * @param $user_id
-     * @return array|Chats[]
-     * Получение всех чатов пользователя
+     * @param getLastMessageDTO $getLastMessageDTO
+     * @return mixed
      */
-    public function getChats($user_id, $status = ChatsUsers::STATUS_ACTIVE)
+    public function getLastMessage(getLastMessageDTO $getLastMessageDTO)
     {
-        $chats = Chats::find()->joinWith("chatsUsers")->andWhere(['chats_users.status' => $status, 'chats_users.user_id' => $user_id])->all();
-        return $chats;
+        return Messages::find()->chat($getLastMessageDTO->chat_id)->active()->orderBy(['message_id' => SORT_DESC])->one();
+    }
+
+    /**
+     * @param getMessagesDTO $getMessagesDTO
+     * @return mixed
+     */
+    public function getMessages(getMessagesDTO $getMessagesDTO)
+    {
+        $start_date = null;
+        $end_date = null;
+
+        if ($getMessagesDTO->forDate !== null) {
+            $start_date = strtotime($getMessagesDTO->forDate);
+            $end_date = strtotime($getMessagesDTO->forDate) + 86400;
+        }
+
+        $query = Messages::find()->chat($getMessagesDTO->chat_id)->status($getMessagesDTO->status)->andFilterWhere(['BETWEEN', 'created_at', $start_date, $end_date])->orderBy(['message_id' => SORT_DESC]);
+
+        if ($getMessagesDTO->getQuery) {
+            return $query;
+        }
+
+        return $query->all();
     }
 
     /**
      * @param $chat_id
-     * @return array|Messages|null
+     * @return Chats|null
      */
-    public function getLastSentMessage($chat_id)
+    public function getChatById($chat_id): ?Chats
     {
-        
-        return Messages::find()->chat($chat_id)->active()->orderBy(['message_id' => SORT_DESC])->one();
+        $chat = Chats::findOne($chat_id);
+        if (!($chat instanceof Chats)) {
+            throw new ChatException("Chat is not founded");
+        }
+        return $chat;
     }
 
     /**
-     * @param $chat_id
-     * @param int $status
-     * @return array|Messages[]
+     * @param $message_id
+     * @return Messages|null
+     * @throws ChatException
      */
-    public function getMessages($chat_id, $status = Messages::STATUS_SENT)
+    public function getMessageById($message_id): ?Messages
     {
-        return $this->getMessagesQuery($chat_id, $status)->all();
-    }
-
-    /**
-     * @param $chat_id
-     * @param int $status
-     * @return \jakharbek\chat\models\MessagesQuery
-     */
-    public function getMessagesQuery($chat_id, $status = Messages::STATUS_SENT)
-    {
-        return Messages::find()->chat($chat_id)->status($status)->orderBy(['message_id' => SORT_DESC]);
+        $message = Messages::findOne($message_id);
+        if (!($message instanceof Messages)) {
+            throw new ChatException("Message is not founded");
+        }
+        return $message;
     }
 
 }

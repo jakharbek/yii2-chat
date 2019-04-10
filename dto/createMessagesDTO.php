@@ -10,5 +10,4 @@ class createMessagesDTO
     public $replay_message_id = null;
     public $from_user_id;
     public $to_chat_id;
-    public $to_user_id = null;
 }

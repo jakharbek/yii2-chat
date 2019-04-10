@@ -19,7 +19,6 @@ class m190128_094623_create_table_messages extends Migration
             'replay_message_id' => $this->integer()->null(),
             'from_user_id'      => $this->integer(),
             'to_chat_id'        => $this->integer(),
-            'to_user_id'        => $this->integer()->null(),
             'is_seen'           => $this->integer()->defaultValue(0),
             'seen'              => $this->string(1024),
             'from_status'            => $this->integer()->defaultValue(0),

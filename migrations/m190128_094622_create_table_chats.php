@@ -14,10 +14,12 @@ class m190128_094622_create_table_chats extends Migration
     {
         $this->createTable("{{%chats}}", [
             'chat_id' => $this->primaryKey(),
-            'guid'    => $this->string(),
             'created_at' => $this->integer()->null(),
             'status'     => $this->integer()->defaultValue(1),
-            'type'       => $this->integer()
+            'type'       => $this->integer(),
+            'title' => $this->string(),
+            'owner_id' => $this->integer(),
+            'label' => $this->string()
         ]);
     }
 

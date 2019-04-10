@@ -2,8 +2,9 @@
 
 namespace jakharbek\chat\factory;
 
+use jakharbek\chat\dto\linkedChatDTO;
 use jakharbek\chat\models\Chats;
-use jakharbek\chat\models\ChatsUsers;
+use jakharbek\chat\services\ChatServices;
 use Yii;
 use \jakharbek\chat\dto\createChatsDTO;
 
@@ -29,30 +30,32 @@ class ChatsFactory
                 'class' => Chats::class
             ]);
 
-            $chat->diolog_1 = $createChatsDTO->diolog_1;
-            $chat->diolog_2 = $createChatsDTO->diolog_2;
-            $chat->diolog_type = $createChatsDTO->diolog_type;
+            $chat->title = $createChatsDTO->title;
+            $chat->owner_id = $createChatsDTO->owner_id;
             $chat->status = $createChatsDTO->status;
             $chat->type = $createChatsDTO->type;
 
+            if ($chat->type == Chats::TYPE_PRIVATE) {
+                if (count($createChatsDTO->members) !== 1) {
+                    throw new \DomainException(Yii::t("main","The number of users can not be more or less than one."));
+                }
+            }
 
             if (!$chat->save()) {
                 $transaction->rollBack();
                 return $chat->getErrors();
             }
 
+            $linkedChatDTO = new linkedChatDTO();
+            $linkedChatDTO->chat_id = $chat->chat_id;
+            $linkedChatDTO->user_id = Yii::$app->user->id;
+            $linkedChatDTO->members = $createChatsDTO->members;
 
-            $chatsUsers = new ChatsUsers();
-            $chatsUsers->user_id = $createChatsDTO->diolog_1;
-            $chatsUsers->chat_id = $chat->chat_id;
-            $chatsUsers->status = Chats::STATUS_ACTIVE;
-            $chatsUsers->save();
-
-            $chatsUsers2 = new ChatsUsers();
-            $chatsUsers2->user_id = $createChatsDTO->diolog_2;
-            $chatsUsers2->chat_id = $chat->chat_id;
-            $chatsUsers2->status = Chats::STATUS_ACTIVE;
-            $chatsUsers2->save();
+            /**
+             * @var $chatServices ChatServices
+             */
+            $chatServices = Yii::createObject(ChatServices::class);
+            $chatServices->linkedChat($linkedChatDTO);
 
             $transaction->commit();
         } catch (\Exception $exception) {

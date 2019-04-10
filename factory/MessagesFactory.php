@@ -28,7 +28,6 @@ class MessagesFactory extends Component
         $message->message = $createMessagesDTO->message;
         $message->type = $createMessagesDTO->type;
         $message->to_chat_id = $createMessagesDTO->to_chat_id;
-        $message->to_user_id = $createMessagesDTO->to_user_id;
         $message->replay_message_id = $createMessagesDTO->replay_message_id;
         $message->from_user_id = $createMessagesDTO->from_user_id;
 

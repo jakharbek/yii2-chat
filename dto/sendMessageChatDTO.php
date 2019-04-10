@@ -1,14 +1,13 @@
 <?php
 namespace jakharbek\chat\dto;
 
+use jakharbek\chat\models\Messages;
+
 class sendMessageChatDTO
 {
-    public $diolog_1;
-    public $diolog_2;
-    public $diolog_type;
-
+    public $chat_id;
     public $message;
     public $replay_message_id;
     public $from_user_id;
-    public $to_user_id;
+    public $type = Messages::TYPE_USUALLY;
 }

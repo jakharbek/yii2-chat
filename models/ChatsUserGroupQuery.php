@@ -2,11 +2,11 @@
 namespace jakharbek\chat\models;
 
 /**
- * This is the ActiveQuery class for [[ChatsUsers]].
+ * This is the ActiveQuery class for [[ChatsUserGroup]].
  *
  * @see ChatsUsers
  */
-class ChatsUsersQuery extends \yii\db\ActiveQuery
+class ChatsUserGroupQuery extends \yii\db\ActiveQuery
 {
     /*public function active()
     {
@@ -15,7 +15,7 @@ class ChatsUsersQuery extends \yii\db\ActiveQuery
 
     /**
      * {@inheritdoc}
-     * @return ChatsUsers[]|array
+     * @return ChatsUserGroup[]|array
      */
     public function all($db = null)
     {
@@ -24,7 +24,7 @@ class ChatsUsersQuery extends \yii\db\ActiveQuery
 
     /**
      * {@inheritdoc}
-     * @return ChatsUsers|array|null
+     * @return ChatsUserGroup|array|null
      */
     public function one($db = null)
     {
