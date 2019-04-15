@@ -7,6 +7,7 @@ use jakharbek\chat\dto\deleteMessageDTO;
 use jakharbek\chat\dto\linkedChatDTO;
 use jakharbek\chat\dto\sendMessageChatDTO;
 use jakharbek\chat\dto\setSeenMessagesDTO;
+use jakharbek\chat\dto\unlinkedChatDTO;
 use jakharbek\chat\exceptions\ChatException;
 use jakharbek\chat\exceptions\MessageСannotBeCreatedException;
 use jakharbek\chat\factory\ChatsFactory;
@@ -34,6 +35,21 @@ class ChatServices extends Component implements iChatsServices
     {
         $this->chatRepository = Yii::$container->get(iChatsRepository::class);
         parent::__construct($config);
+    }
+
+    /**
+     * @param unlinkedChatDTO $unlinkedChatDTO
+     * @return mixed
+     */
+    public function unlinkedChat(unlinkedChatDTO $unlinkedChatDTO)
+    {
+
+        $chat = $this->chatRepository->getChatById($unlinkedChatDTO->chat_id);
+        if ($chat->isPrivate) {
+            throw new ChatException("Chat is not public");
+        }
+
+        ChatsUserGroup::deleteAll(['chat_id' => $chat->chat_id, 'user_id' => $unlinkedChatDTO->members]);
     }
 
     /**
@@ -96,6 +112,7 @@ class ChatServices extends Component implements iChatsServices
         $createMessageDTO->from_user_id = $sendMessageChatDTO->from_user_id;
         $createMessageDTO->replay_message_id = $sendMessageChatDTO->replay_message_id;
         $createMessageDTO->type = $sendMessageChatDTO->type;
+        $createMessageDTO->to_chat_id = $chat->chat_id;
 
         /**
          * @var $message Messages
@@ -103,7 +120,7 @@ class ChatServices extends Component implements iChatsServices
         $message = $messagesFactory::create($createMessageDTO);
 
         if (!($message instanceof Messages)) {
-            throw new MessageСannotBeCreatedException(Yii::t("main", "Message can not be created"));
+            throw new MessageСannotBeCreatedException("Message can not be created");
         }
 
         return $message;
@@ -155,4 +172,6 @@ class ChatServices extends Component implements iChatsServices
 
         return $message;
     }
+
+
 }

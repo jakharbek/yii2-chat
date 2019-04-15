@@ -1,14 +1,19 @@
 <?php
 
-namespace api\modules\v1\controllers;
+namespace jakharbek\chat\api;
 
 
+use common\components\ApiController;
 use jakharbek\chat\dto\getChatsDTO;
 use jakharbek\chat\dto\getLastMessageDTO;
 use jakharbek\chat\dto\getMessagesDTO;
 use jakharbek\chat\forms\deleteMessageForm;
+use jakharbek\chat\forms\linkedChatForm;
+use jakharbek\chat\forms\newPrivateChat;
+use jakharbek\chat\forms\newPublicChat;
 use jakharbek\chat\forms\sendMessageForm;
 use jakharbek\chat\forms\setSeenMessagesForm;
+use jakharbek\chat\forms\unlinkedChatForm;
 use jakharbek\chat\interfaces\iChatsRepository;
 use Yii;
 use yii\data\ActiveDataProvider;
@@ -19,7 +24,7 @@ use yii\rest\Controller;
  * Class UserController
  * @package api\modules\v1\controllers
  */
-class ChatController extends Controller
+class ChatController extends \yii\rest\Controller
 {
     /**
      * @return mixed
@@ -71,7 +76,7 @@ class ChatController extends Controller
      * @return ActiveDataProvider
      * @throws \yii\base\InvalidConfigException
      */
-    public function actionGetMessagesChat($chat_id,$forDate = null)
+    public function actionGetMessagesChat($chat_id, $forDate = null)
     {
 
         /**
@@ -113,6 +118,53 @@ class ChatController extends Controller
 
         return $message;
     }
+
+    /**
+     * @return array|bool
+     * @throws \yii\base\InvalidConfigException
+     */
+    public function actionNewPrivateChat()
+    {
+        $requestParams = Yii::$app->getRequest()->getBodyParams();
+        if (empty($requestParams)) {
+            $requestParams = Yii::$app->getRequest()->getQueryParams();
+        }
+
+        $form = new newPrivateChat();
+        $form->setAttributes($requestParams);
+
+        if (!($message = $form->create())) {
+            Yii::$app->response->statusCode = 400;
+            Yii::$app->response->statusText = "Bad Request";
+            return $form->getErrors();
+        }
+
+        return $message;
+    }
+
+    /**
+     * @return array|bool
+     * @throws \yii\base\InvalidConfigException
+     */
+    public function actionNewPublicChat()
+    {
+        $requestParams = Yii::$app->getRequest()->getBodyParams();
+        if (empty($requestParams)) {
+            $requestParams = Yii::$app->getRequest()->getQueryParams();
+        }
+
+        $form = new newPublicChat();
+        $form->setAttributes($requestParams);
+
+        if (!($message = $form->create())) {
+            Yii::$app->response->statusCode = 400;
+            Yii::$app->response->statusText = "Bad Request";
+            return $form->getErrors();
+        }
+
+        return $message;
+    }
+
 
     /**
      * @return array|bool
@@ -160,6 +212,45 @@ class ChatController extends Controller
         return $message;
     }
 
+    public function actionLinkedChat()
+    {
+        $requestParams = Yii::$app->getRequest()->getBodyParams();
+        if (empty($requestParams)) {
+            $requestParams = Yii::$app->getRequest()->getQueryParams();
+        }
+
+        $form = new linkedChatForm();
+        $form->setAttributes($requestParams);
+
+        if (!($message = $form->linked())) {
+            Yii::$app->response->statusCode = 400;
+            Yii::$app->response->statusText = "Bad Request";
+            return $form->getErrors();
+        }
+
+        return $message;
+    }
+
+    public function actionUnlinkedChat()
+    {
+        $requestParams = Yii::$app->getRequest()->getBodyParams();
+        if (empty($requestParams)) {
+            $requestParams = Yii::$app->getRequest()->getQueryParams();
+        }
+
+        $form = new unlinkedChatForm();
+        $form->setAttributes($requestParams);
+
+        if (!($message = $form->unlinked())) {
+            Yii::$app->response->statusCode = 400;
+            Yii::$app->response->statusText = "Bad Request";
+            return $form->getErrors();
+        }
+
+        return $message;
+    }
+
+
     /**
      * @return array
      */
@@ -170,8 +261,12 @@ class ChatController extends Controller
             'get-last-message-chat' => ['get'],
             'get-messages-chat' => ['get'],
             'send-message' => ['post'],
+            'new-private-chat' => ['post'],
+            'new-public-chat' => ['post'],
             'delete-message' => ['delete'],
-            'set-seen-messages' => ['put']
+            'set-seen-messages' => ['put'],
+            'linked-chat' => ['put'],
+            'unlinked-chat' => ['put']
         ]);
     }
 }

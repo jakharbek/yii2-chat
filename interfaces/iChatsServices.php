@@ -5,6 +5,7 @@ use jakharbek\chat\dto\deleteMessageDTO;
 use jakharbek\chat\dto\linkedChatDTO;
 use jakharbek\chat\dto\sendMessageChatDTO;
 use jakharbek\chat\dto\setSeenMessagesDTO;
+use jakharbek\chat\dto\unlinkedChatDTO;
 
 /**
  * Interface iChatsServices
@@ -17,6 +18,12 @@ interface iChatsServices
      * @return mixed
      */
     public function linkedChat(linkedChatDTO $linkedChatDTO);
+
+    /**
+     * @param unlinkedChatDTO $unlinkedChatDTO
+     * @return mixed
+     */
+    public function unlinkedChat(unlinkedChatDTO $unlinkedChatDTO);
 
     /**
      * @param sendMessageChatDTO $sendMessageChatDTO

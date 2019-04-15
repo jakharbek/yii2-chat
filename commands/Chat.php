@@ -6,6 +6,7 @@ use common\models\UserTokens;
 use jakharbek\chat\dto\sendMessageChatDTO;
 use jakharbek\chat\exceptions\ChatException;
 use jakharbek\chat\interfaces\iChatsRepository;
+use jakharbek\chat\interfaces\iChatsServices;
 use jakharbek\chat\models\Chats;
 use jakharbek\chat\repositories\ChatRepository;
 use jakharbek\chat\services\ChatServices;
@@ -57,7 +58,8 @@ class Chat implements MessageComponentInterface
     {
         $params = $this->getConnectionParams($conn);
         $access_token = $params['access_token'];
-        $token = UserTokens::find()->andWhere(['token' => $access_token])->andWhere(['<', 'expires', time()])->one();
+        $token = UserTokens::find()->andWhere(['token' => $access_token])->one();
+        echo "User token is: " . $access_token;
         if (is_object($token)) {
             return true;
         }
@@ -73,7 +75,9 @@ class Chat implements MessageComponentInterface
         $params = $this->getConnectionParams($conn);
         $access_token = $params['access_token'];
 
-        return UserTokens::find()->andWhere(['token' => $access_token])->one()->user_id;
+        echo "getUserID \n";
+
+        return UserTokens::find()->andWhere(['token' => $access_token])->asArray()->one()['user_id'];
     }
 
     /**
@@ -113,7 +117,7 @@ class Chat implements MessageComponentInterface
             return false;
         }
 
-        return $repositoryChat->getChatById($params['chat_id']);
+        return $repositoryChat->getChatById($params['chat_id'])->chat_id;
     }
 
     /**
@@ -139,7 +143,7 @@ class Chat implements MessageComponentInterface
         $chatId = $this->getChatIdFromConnection($conn);
         if (array_key_exists($chatId, $this->clients)) {
             $this->clients[$chatId]->detach($conn);
-            echo "detach to chat" . $chatId;
+            echo "detach to chat:" . $chatId;
         }
     }
 
@@ -213,54 +217,73 @@ class Chat implements MessageComponentInterface
     public function onMessage(ConnectionInterface $from, $_request)
     {
         echo "start send messasge";
-        $params = $this->getConnectionParams($from);
 
-        /**
-         * @var $clients ConnectionInterface[]
-         */
-        $clients = $this->getClientsFromConnection($from);
+        try {
 
-        if (!$clients) {
-            return false;
-        }
-
-        $request = Json::decode($_request);
-        $from_user_id = $this->getUserId($from);
-        $message = $request['data'];
-        $replay_message_id = $params['replay_message_id'];
-
-        if ($request['type'] == self::TYPE_MESSAGE) {
-
+            $params = $this->getConnectionParams($from);
 
             /**
-             * @var $serviceChat iChatsRepository
+             * @var $clients ConnectionInterface[]
              */
-            $serviceChat = \Yii::$container->get(iChatsRepository::class);
+            $clients = $this->getClientsFromConnection($from);
 
-            $sendMessageChatDTO = new sendMessageChatDTO();
-            $sendMessageChatDTO->from_user_id = $from_user_id;
-            $sendMessageChatDTO->message = $message;
-            $sendMessageChatDTO->replay_message_id = $replay_message_id;
-            $_message = $serviceChat->sendMessage($sendMessageChatDTO);
-
-            foreach ($clients as $client) {
-                $response = [
-                    'type' => self::TYPE_MESSAGE,
-                    'data' => [
-                        '_request' => $_request,
-                        'replay_message_id' => $replay_message_id,
-                        'from_user_id' => $from_user_id,
-                        'message' => $message,
-                        '_from' => $from,
-                        '_message' => $_message
-                    ]
-                ];
-                echo "Connection is opened:";
-
-                $client->send(Json::encode($response));
+            if (!$clients) {
+                echo "Clients not founded";
+                return false;
             }
+            echo "json decoding";
+
+            $request = Json::decode($_request);
+            $from_user_id = $this->getUserId($from);
+            $message = $request['data'];
+            $replay_message_id = @$params['replay_message_id'];
+            $chat_id = $params['chat_id'];
+
+            if ($request['type'] == self::TYPE_MESSAGE) {
+
+
+                /**
+                 * @var $serviceChat iChatsServices
+                 */
+                $serviceChat = \Yii::$container->get(iChatsServices::class);
+
+                $sendMessageChatDTO = new sendMessageChatDTO();
+                $sendMessageChatDTO->chat_id = $chat_id;
+                $sendMessageChatDTO->from_user_id = $from_user_id;
+                $sendMessageChatDTO->message = $message;
+                $sendMessageChatDTO->replay_message_id = $replay_message_id;
+                $_message = $serviceChat->sendMessage($sendMessageChatDTO);
+
+                foreach ($clients as $client) {
+                    $response = [
+                        'type' => self::TYPE_MESSAGE,
+                        'data' => [
+                            '_request' => $_request,
+                            'replay_message_id' => $replay_message_id,
+                            'from_user_id' => $from_user_id,
+                            'message' => $message,
+                            '_from' => $from,
+                            '_message' => $_message
+                        ]
+                    ];
+                    echo "Connection is opened:";
+
+                    $client->send(Json::encode($response));
+                }
+            }
+            echo "end send messasge";
+
+        } catch (\Exception $exception) {
+            echo "Error:" . print_r([
+                    'error' => 1,
+                    'data' => [$exception->getMessage(), $exception->getFile(), $exception->getLine(),$exception->getTraceAsString()],
+                ], true);
+
+            return $from->send(Json::encode([
+                'error' => 1,
+                'data' => [$exception->getMessage(), $exception->getFile(), $exception->getLine(),$exception->getTraceAsString()],
+            ]));
         }
-        echo "end send messasge";
     }
 
     /**
@@ -280,6 +303,9 @@ class Chat implements MessageComponentInterface
     public function onError(ConnectionInterface $conn, \Exception $e)
     {
         echo "Connection has error:" . $e->getMessage();
+        echo $e->getMessage();
+        echo $e->getFile();
+        echo $e->getLine();
         $this->detachFromChat($conn);
     }
 }

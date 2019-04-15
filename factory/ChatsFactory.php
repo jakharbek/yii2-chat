@@ -34,10 +34,11 @@ class ChatsFactory
             $chat->owner_id = $createChatsDTO->owner_id;
             $chat->status = $createChatsDTO->status;
             $chat->type = $createChatsDTO->type;
+            $chat->label = $createChatsDTO->label;
 
             if ($chat->type == Chats::TYPE_PRIVATE) {
                 if (count($createChatsDTO->members) !== 1) {
-                    throw new \DomainException(Yii::t("main","The number of users can not be more or less than one."));
+                    throw new \DomainException("The number of users can not be more or less than one.");
                 }
             }
 
@@ -55,7 +56,10 @@ class ChatsFactory
              * @var $chatServices ChatServices
              */
             $chatServices = Yii::createObject(ChatServices::class);
-            $chatServices->linkedChat($linkedChatDTO);
+
+            if(count($linkedChatDTO->members) > 1){
+                $chatServices->linkedChat($linkedChatDTO);
+            }
 
             $transaction->commit();
         } catch (\Exception $exception) {

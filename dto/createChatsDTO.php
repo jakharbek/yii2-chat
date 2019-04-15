@@ -14,4 +14,5 @@ class createChatsDTO
     public $type = Chats::TYPE_PRIVATE;
     public $owner_id = null;
     public $members = [];
+    public $label = null;
 }

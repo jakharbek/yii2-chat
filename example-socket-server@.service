@@ -1,0 +1,12 @@
+[Unit]
+Description=Socket Server Worker %I
+After=network.target
+
+[Service]
+User=root
+Group=root
+ExecStart=/usr/bin/php /var/www/site/public_html/yii server/start
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

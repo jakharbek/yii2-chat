@@ -83,7 +83,7 @@ class ChatRepository extends Component implements iChatsRepository
      */
     public function getChatById($chat_id): ?Chats
     {
-        $chat = Chats::findOne($chat_id);
+        $chat = Chats::findOne(intval($chat_id));
         if (!($chat instanceof Chats)) {
             throw new ChatException("Chat is not founded");
         }

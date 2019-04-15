@@ -2,11 +2,11 @@
 
 namespace jakharbek\chat\interfaces;
 
-use jakharbek\chat\dto\getChatDTO;
 use jakharbek\chat\dto\getChatsDTO;
 use jakharbek\chat\dto\getLastMessageDTO;
 use jakharbek\chat\dto\getMessagesDTO;
 use jakharbek\chat\models\Chats;
+use jakharbek\chat\models\Messages;
 
 /**
  * Interface iChatsRepository
